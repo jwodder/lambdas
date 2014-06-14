@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 class LambdaError(ValueError): pass
 
 class Atom(object):
@@ -45,7 +47,7 @@ class Lambda(object):
 class Expression(object):
     def __init__(self, *expr): self.expr = expr
 
-    def __repr__(self): return 'Expression(%r)' % (self.expr,)
+    def __repr__(self): return 'Expression' + repr(self.expr)
 
     def __str__(self):
 	if len(self.expr) == 1:
@@ -60,7 +62,7 @@ class Expression(object):
     #### def simplify(self): ...
 
 
-def parseExpr(predef, tokens):
+def parseExpr(tokens, predef={}):
     # predef - dict of previously defined symbols
     stack = [[]]
     # Except for the first element, every element of `stack` is of the form
