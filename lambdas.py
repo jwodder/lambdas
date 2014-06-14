@@ -100,6 +100,45 @@ class Expression(object):
 	    return Expression(val, *expr)
 
 
+class Builtin(object):
+    def __init__(self, name, f, arity, args=()):
+	self.name = name
+	self.f = f
+	self.arity = arity
+	self.args = args
+
+    def __repr__(self): return 'Builtin(%r, %r, %r, %r)' \
+				% (self.name, self.f, self.arity, self.args)
+
+    def __str__(self):
+        if not self.args:
+	    return self.name
+	else:
+	    def substr(e):
+		if isinstance(e, (Expression, Lambda)):
+		    return '(' + str(e) + ')'
+		else:
+		    return str(e)
+	    return '<%s %s>' % (self.name, ' '.join(map(substr, self.args)))
+
+    def simplify(self): return self
+
+    def eval(self):
+        if len(self.args) >= self.arity:
+	    val = self.f(*self.args[:self.arity])
+	    return Expression(val, *self.args[self.arity:]).simplify()
+	else:
+	    return None
+
+    def __call__(self, arg):
+	args = self.args + (arg,)
+	if len(args) + 1 >= self.arity:
+	    val = self.f(*args[:self.arity])
+	    return Expression(val, *args[self.arity:]).simplify()
+	else:
+	    return Builtin(self.name, self.f, self.arity, self.args)
+
+
 def parseExpr(tokens, predef={}):
     # predef - dict of previously defined symbols
     stack = [[]]
@@ -196,3 +235,11 @@ def parseExpr(tokens, predef={}):
 	else:
 	    break
     return Expression(*stack[-1]) if stack[-1] else None
+
+
+TRUE  = Lambda(('x', 'y'), BoundVar('x', 1))
+FALSE = Lambda(('x', 'y'), BoundVar('y', 0))
+
+builtins = {
+ "=": Builtin("=", lambda x,y: TRUE if x == y else FALSE, 2)
+}
