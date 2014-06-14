@@ -12,6 +12,10 @@ class Atom(object):
 
     def __repr__(self): return 'Atom(%r)' % (self.name,)
 
+    def simplify(self): return self
+
+    def eval(self): return None
+
 
 class FreeVar(object):
     def __init__(self, name, expr):
@@ -21,6 +25,10 @@ class FreeVar(object):
     def __str__(self): return self.name
 
     def __repr__(self): return 'FreeVar(%r, %r)' % (self.name, self.expr)
+
+    def simplify(self): return self
+
+    def eval(self): return self.expr
 
 
 class BoundVar(object):
@@ -32,6 +40,11 @@ class BoundVar(object):
 
     def __str__(self): return self.name
 
+    def simplify(self): return self
+
+    def eval(self): return None
+
+
 class Lambda(object):
     def __init__(self, args, expr):
 	self.args = args
@@ -40,6 +53,10 @@ class Lambda(object):
     def __repr__(self): return 'Lambda(%r, %r)' % (self.args, self.expr)
 
     def __str__(self): return 'λ' + ' '.join(self.args) + '. ' + str(self.expr)
+
+    def simplify(self): return Lambda(self.args, self.expr.simplify())
+
+    def eval(self): return None
 
     ### def __call__(self, arg): ...
 
@@ -59,7 +76,28 @@ class Expression(object):
 		return str(e)
 	return ' '.join(map(substr, self.expr))
 
-    #### def simplify(self): ...
+    def simplify(self):
+	expr = self.expr
+	while isinstance(expr[0], Expression):
+	    expr = expr[0].expr + expr[1:]
+	expr = map(lambda e: e.simplify(), expr)
+	return expr[0] if len(expr) == 1 else Expression(*expr)
+
+    def eval(self):
+	first = self.expr[0].simplify()
+	expr = self.expr[1:]
+        if callable(first):
+	    if len(self.expr) == 1: return None
+	    val = first(expr[0])
+	    expr = expr[1:]
+	else:
+	    val = first.eval()
+	if val is None:
+	    return None
+	elif isinstance(val, Expression):
+	    return Expression(*(val.expr + expr))
+	else:
+	    return Expression(val, *expr)
 
 
 def parseExpr(tokens, predef={}):
@@ -144,7 +182,7 @@ def parseExpr(tokens, predef={}):
 		    raise LambdaError('undefined variable %r' % (t,))
 
     if inArgs:
-        raise LambdaError('expression terminated in middle of argument list')
+	raise LambdaError('expression terminated in middle of argument list')
     while stack and stack[-1]:
 	if stack[-1][0] == '(':
 	    raise LambdaError('parentheses not closed')
