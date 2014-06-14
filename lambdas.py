@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import re
+
 def structCmp(*fields):  # internal function; not for export
     return lambda self, other: cmp(type(self), type(other)) or \
 			       cmp(tuple(getattr(self,  f) for f in fields),
@@ -69,7 +71,7 @@ class Lambda(object):
     def eval(self): return None
 
     def __call__(self, arg):
-        def bind(i,e):
+	def bind(i,e):
 	    if isinstance(e, BoundVar) and e.index == i:
 		return arg
 	    elif isinstance(e, Expression):
@@ -112,7 +114,7 @@ class Expression(object):
     def eval(self):
 	first = self.expr[0].simplify()
 	expr = self.expr[1:]
-        if callable(first):
+	if callable(first):
 	    if len(self.expr) == 1: return None
 	    val = first(expr[0])
 	    expr = expr[1:]
@@ -139,7 +141,7 @@ class Builtin(object):
 				% (self.name, self.f, self.arity, self.args)
 
     def __str__(self):
-        if not self.args:
+	if not self.args:
 	    return self.name
 	else:
 	    def substr(e):
@@ -152,7 +154,7 @@ class Builtin(object):
     def simplify(self): return self
 
     def eval(self):
-        if len(self.args) >= self.arity:
+	if len(self.args) >= self.arity:
 	    val = self.f(*self.args[:self.arity])
 	    return Expression(val, *self.args[self.arity:]).simplify()
 	else:
@@ -167,6 +169,19 @@ class Builtin(object):
 	    return Builtin(self.name, self.f, self.arity, self.args)
 
 
+def mkexpr(*expr):
+    if not expr:
+	raise ValueError('empty argument list')
+    elif len(expr) == 1:
+	return expr[0]
+    else:
+	def unbuild(e):
+	    if isinstance(e, FreeVar) and isinstance(e.expr, Builtin):
+		return e.expr
+	    else:
+		return e
+	return Expression(*(unbuild(e) for e in expr))
+
 def parseExpr(tokens, predef={}):
     # predef - dict of previously defined symbols
     stack = [[]]
@@ -178,13 +193,11 @@ def parseExpr(tokens, predef={}):
     # While inside a lambda, `scope` is a dict mapping bound variable names to
     # integers representing the depth of the lambda to which they are bound.
     inArgs = False
-
     for t in tokens:
 	if inArgs:
 	    if t in ('(', ')', 'λ') or t[0] == "'":
 		raise LambdaError('invalid token in lambda argument list')
 	    elif t == '.':
-		### The lexer should also map '->' and '→' to '.'
 		args = stack[-1][1:]
 		if not args:
 		    raise LambdaError('no arguments for lambda')
@@ -201,18 +214,16 @@ def parseExpr(tokens, predef={}):
 		    raise LambdaError('same name used for multiple arguments'
 				      ' to lambda')
 		stack[-1].append(t)
-
 	else:
 	    if t == '(':
 		stack.append(['('])
-
 	    elif t == ')':
 		while stack and stack[-1]:
 		    if stack[-1][0] == '(':
 			expr = stack.pop()[1:]
 			if not expr:
 			    raise LambdaError('empty parentheses')
-			stack[-1].append(Expression(*expr))
+			stack[-1].append(mkexpr(*expr))
 			break
 		    elif stack[-1][0] == 'λ':
 			args = stack[-1][1]
@@ -220,34 +231,22 @@ def parseExpr(tokens, predef={}):
 			expr = stack.pop()[3:]
 			if not expr:
 			    raise LambdaError('empty lambda')
-			stack[-1].append(Lambda(args, Expression(*expr)))
+			stack[-1].append(Lambda(args, mkexpr(*expr)))
 		    else:
 			raise LambdaError('too many closing parentheses')
 		else:
 		    raise LambdaError('too many closing parentheses')
-
 	    elif t == 'λ':
-		### The lexer should also map '\\' to 'λ'
 		inArgs = True
 		stack.append(['λ'])
-
 	    elif t == '.':
 		raise LambdaError('argument terminator outside of argument list')
-
-	    #elif t == "'":
-		### error; this should be caught by the lexer
-
 	    elif t[0] == "'":
 		stack[-1].append(Atom(t[1:]))
-
 	    else:
-		if t in scope:
-		    stack[-1].append(BoundVar(t, scope[t]))
-		elif t in predef:
-		    stack[-1].append(FreeVar(t, predef[t]))
-		else:
-		    raise LambdaError('undefined variable %r' % (t,))
-
+		if   t in scope:  stack[-1].append(BoundVar(t, scope[t]))
+		elif t in predef: stack[-1].append(FreeVar(t, predef[t]))
+		else: raise LambdaError('undefined variable %r' % (t,))
     if inArgs:
 	raise LambdaError('expression terminated in middle of argument list')
     while stack and stack[-1]:
@@ -259,11 +258,21 @@ def parseExpr(tokens, predef={}):
 	    expr = stack.pop()[3:]
 	    if not expr:
 		raise LambdaError('empty lambda')
-	    stack[-1].append(Lambda(args, Expression(*expr)))
-	else:
-	    break
-    return Expression(*stack[-1]) if stack[-1] else None
+	    stack[-1].append(Lambda(args, mkexpr(*expr)))
+	else: break
+    return mkexpr(*stack[-1]).simplify() if stack[-1] else None
 
+def lexExpr(s):
+    s = re.sub("(?<=λ|\\)([A-Za-z]+)(?=\\.|->|→)",
+	       lambda m: ' '.join(m.group()),
+	       s)
+    for word in re.split(r'\s+|([()\x5C.]|λ|->|→)', s):
+	if   word == '': next
+	elif word == '(' or word == ')':  yield word
+	elif word == 'λ' or word == '\\': yield 'λ'
+	elif word in ('.', '->', '→'):    yield '.'
+	elif word == "'": raise LambdaError('invalid token "\'"')
+	else: yield word
 
 TRUE  = Lambda(('x', 'y'), BoundVar('x', 1))
 FALSE = Lambda(('x', 'y'), BoundVar('y', 0))
