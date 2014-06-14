@@ -68,7 +68,21 @@ class Lambda(object):
 
     def eval(self): return None
 
-    ### def __call__(self, arg): ...
+    def __call__(self, arg):
+        def bind(i,e):
+	    if isinstance(e, BoundVar) and e.index == i:
+		return arg
+	    elif isinstance(e, Expression):
+		return Expression(*(bind(i,f) for f in e.expr))
+	    elif isinstance(e, Lambda):
+		return Lambda(e.args, bind(i+len(e.args), e.expr))
+	    else:
+		return e
+	args2 = self.args[1:]
+	if args2:
+	    return Lambda(args2, bind(len(args2), self.expr))
+	else:
+	    return bind(0, self.expr)
 
 
 class Expression(object):
