@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 
+def structCmp(*fields):  # internal function; not for export
+    return lambda self, other: cmp(type(self), type(other)) or \
+			       cmp(tuple(getattr(self,  f) for f in fields),
+				   tuple(getattr(other, f) for f in fields))
+
 class LambdaError(ValueError): pass
 
 class Atom(object):
     def __init__(self, name): self.name = name
 
-    def __cmp__(self, other):
-	return cmp(type(self), type(other)) or cmp(self.name, other.name)
+    __cmp__ = structCmp("name")
 
     def __str__(self): return "'" + self.name
 
@@ -22,6 +26,8 @@ class FreeVar(object):
 	self.name = name
 	self.expr = expr
 
+    __cmp__ = structCmp("name", "expr")
+
     def __str__(self): return self.name
 
     def __repr__(self): return 'FreeVar(%r, %r)' % (self.name, self.expr)
@@ -35,6 +41,8 @@ class BoundVar(object):
     def __init__(self, name, index):
 	self.name = name
 	self.index = index
+
+    __cmp__ = structCmp("name", "index")
 
     def __repr__(self): return 'BoundVar(%r, %r)' % (self.name, self.index)
 
@@ -50,6 +58,8 @@ class Lambda(object):
 	self.args = args
 	self.expr = expr
 
+    __cmp__ = structCmp("args", "expr")
+
     def __repr__(self): return 'Lambda(%r, %r)' % (self.args, self.expr)
 
     def __str__(self): return 'λ' + ' '.join(self.args) + '. ' + str(self.expr)
@@ -63,6 +73,8 @@ class Lambda(object):
 
 class Expression(object):
     def __init__(self, *expr): self.expr = expr
+
+    __cmp__ = structCmp("expr")
 
     def __repr__(self): return 'Expression' + repr(self.expr)
 
@@ -106,6 +118,8 @@ class Builtin(object):
 	self.f = f
 	self.arity = arity
 	self.args = args
+
+    __cmp__ = structCmp("name", "f", "arity", "args")
 
     def __repr__(self): return 'Builtin(%r, %r, %r, %r)' \
 				% (self.name, self.f, self.arity, self.args)
@@ -241,5 +255,5 @@ TRUE  = Lambda(('x', 'y'), BoundVar('x', 1))
 FALSE = Lambda(('x', 'y'), BoundVar('y', 0))
 
 builtins = {
- "=": Builtin("=", lambda x,y: TRUE if x == y else FALSE, 2)
+    "=": Builtin("=", lambda x,y: TRUE if x == y else FALSE, 2)
 }
