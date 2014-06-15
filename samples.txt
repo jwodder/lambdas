@@ -1,0 +1,133 @@
+K := λxy. x
+S := λxyz. (x z) (y z)
+I := λx. x
+X := λx. x S K  # a.k.a. ι
+X' := λx. x K S K
+B := λxyz. x (y z)  # function composition
+C := λxyz. x z y
+W := λxy. x y y
+Y := λg. (λx. g (x x)) (λx. g (x x))
+Y' := (λxy. x y x) (λyx. y (x y x))
+Θ := (λxy. y (x x y)) (λxy. y (x x y))
+ω := λx. x x
+Ω := ω ω
+Ω_2 := (λx. x x x) (λx. x x x)
+
+0 := λfx. x
+1 := λfx. f x
+2 := λfx. f (f x)
+3 := λfx. f (f (f x))
+4 := λfx. f (f (f (f x)))
+5 := λfx. f (f (f (f (f x))))
+# et cetera
+
+
+# The successor operator (given a natural number n, calculate n+1):
+SUCC := λnfx. f (n f x)
+
+# The predecessor operator (for all n>0, calculate n-1; for zero, return zero):
+PRED := λnfx. n (λgh. h (g f)) (λu. x) (λu. u)
+
+PLUS := λmnfx. n f (m f x)  # ≡ λmn. n SUCC m
+
+# `SUB m n` evaluates to m - n if m > n and to zero otherwise:
+SUB := λmn. n PRED m
+
+MULT := B  # ≡ λmnf. m (n f) ≡ λmn. m (PLUS n) 0
+  
+# `DIV a b` evaluates to a pair of two numbers, `a idiv b` and `a mod b`:
+DIV := Y (λgqab. LT a b (PAIR q a) (g (SUCC q) (SUB a b) b)) 0
+IDIV := λab. CAR (DIV a b)
+MOD := λab. CDR (DIV a b)
+
+# Exponentiation (EXP a b ≡ a^b):
+EXP := λab. b a  # ≡ C I
+
+FACTORIAL := Y (λgx. ISZERO x 1 (MULT x (g (PRED x))))
+# ≡ λn. Y (λgax. GT x n a (g (MUL a x) (SUCC x))) 1 1
+# ≡ λn. n (λfax. f (MUL a x) (SUCC x)) K 1 1
+
+
+# `FIBONACCI n` evaluates to the n-th Fibonacci number:
+FIBONACCI := λn. n (λfab. f b (PLUS a b)) K 0 1
+
+GCD := (λgmn. LE m n (g n m) (g m n)) (Y (λgxy. ISZERO y x (g y (MOD x y))))
+
+TRUE  := λxy. x
+FALSE := λxy. y
+AND   := λpq. p q p
+OR    := λpq. p p q
+XOR   := λpq. p (NOT q) q
+NOT   := λp. p FALSE TRUE
+
+ISZERO := λn. n (λx. FALSE) TRUE
+LT     := λab. NOT (LEQ b a)
+LEQ    := λmn. ISZERO (SUB m n)
+EQ     := λmn. AND (LEQ m n) (LEQ n m)
+NEQ    := λab. OR (NOT (LEQ a b)) (NOT (LEQ b a))
+GEQ    := λab. LEQ b a
+GT     := λab. NOT (LEQ a b)
+
+
+# GET n i a_0 a_1 ... a_{n-1} ≡ a_i:
+GET := λni. i K (SUB n (SUCC i) K)
+
+
+# Pairs and Lists
+
+PAIR := λxyf. f x y  # a.k.a. CONS
+CAR := λp. p TRUE
+CDR := λp. p FALSE
+NIL := λx. TRUE
+NULL := λp. p (λxy. FALSE)
+
+# Concatenate two lists:
+APPEND := Y (λgab. NULL a b (PAIR (CAR a) (g (CDR a) b)))
+
+LENGTH := Y (λgcx. NULL x c (g (SUCC c) (CDR x))) 0
+
+# `INDEX x i` evaluates to the i-th (zero-based) element of list `x`, assuming
+# that x has at least i 1 elements:
+INDEX := λxi. CAR (i CDR x)
+
+# Get the last element in a list:
+LAST := Y (λgx. NULL x NIL (NULL (CDR x) (CAR x) (g (CDR x))))
+
+# Get a list without its last element:
+TRUNCATE := Y (λgx. NULL x NIL (NULL (CDR x) NIL (PAIR (CAR x) (g (CDR x)))))
+
+# Reverse a list:
+REVERSE := Y (λgal. NULL l a (g (PAIR (CAR l) a) (CDR l))) NIL
+
+# `RANGE s e` evaluates to a list of all natural numbers from `s` up through
+# `e`, or to NIL when s>e.
+RANGE := λse. Y (λgc. LEQ c e (PAIR c (g (SUCC c) e)) NIL) s
+ 
+# `LIST n a_0 a_1 ... a_{n-1}` evaluates to `a_0 ... a_{n-1}` as a list
+LIST := λn. n (λfax. f (PAIR x a)) REVERSE NIL
+ 
+# `APPLY f x` passes the elements of the list `x` to `f` as arguments
+APPLY := Y (λgfx. NULL x f (g (f (CAR x)) (CDR x)))
+
+# `MAP f x` maps each element of the list `x` through `f`:
+MAP := Y (λgfx. NULL x NIL (PAIR (f (CAR x)) (g f (CDR x))))
+
+# `FILTER f x` evaluates to a list of all `e` in the list `x` for which `f e`
+# is TRUE (assuming that `f` returns only TRUE or FALSE for all elements of
+# `x`)
+FILTER := Y (λgfx. NULL x NIL (f (CAR x) (PAIR (CAR x)) I (g f (CDR x))))
+
+# `CROSS f l m` evaluates to a list of all values of `f a b` where `a` is in
+# the list `l` and `b` is in the list `m`.  To obtain the Cartesian cross
+# product of `l` and `m`, supply PAIR (or a similar function) for `f`.
+CROSS := λflm. FOLD-LEFT APPEND NIL (MAP (λx. MAP (f x) m) l)
+ 
+# `FOLD-LEFT f e x` -- Apply `f a` to each element of the list `x`, where `a`
+# is the result of the previous application (or `e` for the first application)
+# and return the result of the last application
+FOLD-LEFT := Y (λgfex. NULL x e (g f (f e (CAR x)) (CDR x)))
+ 
+# `FOLD-RIGHT f e x` -- Apply `λy. f y a` to each element of the list `x` in
+# reverse order, where `a` is the result of the previous application (or `e`
+# for the first application) and return the result of the last application
+FOLD-RIGHT := λfex. Y (λgy. NULL y e (f (CAR y) (g (CDR y)))) x
