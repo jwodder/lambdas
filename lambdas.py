@@ -249,11 +249,11 @@ def parseExpr(tokens, predef={}):
     return mkexpr(*stack[-1])
 
 def lexExpr(s):
-    s = re.sub(r'(?<=λ|\x5C)([A-Za-z]+)(?=\.|->|→)',
-	       lambda m: ' '.join(m.group()),
+    s = re.sub(r'(?:λ|\x5C)([A-Za-z]+)(?:\.|->|→)',
+	       lambda m: 'λ' + ' '.join(m.group(1)) + '.',
 	       s)
     for word in re.split(r'\s+|([()\x5C.]|λ|->|→)', s):
-	if   word == '': next
+	if   word is None or word == '': continue
 	elif word == "'": raise LambdaError('invalid token "\'"')
 	elif word == '(' or word == ')':  yield word
 	elif word == 'λ' or word == '\\': yield 'λ'
