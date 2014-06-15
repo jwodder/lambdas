@@ -34,7 +34,8 @@ class FreeVar(object):
 
     def __repr__(self): return 'FreeVar(%r, %r)' % (self.name, self.expr)
 
-    def simplify(self): return self
+    def simplify(self):
+	return self.expr if isinstance(self.expr, Builtin) else self
 
     def eval(self): return self.expr
 
@@ -98,10 +99,8 @@ class Expression(object):
 	if len(self.expr) == 1:
 	    return str(self.expr[0])
 	def substr(e):
-	    if isinstance(e, (Expression, Lambda)):
-		return '(' + str(e) + ')'
-	    else:
-		return str(e)
+	    return ('(%s)' if isinstance(e, (Expression, Lambda)) else '%s') \
+		    % (e,)
 	return ' '.join(map(substr, self.expr))
 
     def simplify(self):
@@ -115,7 +114,8 @@ class Expression(object):
 	first = self.expr[0].simplify()
 	expr = self.expr[1:]
 	if callable(first):
-	    if len(self.expr) == 1: return None
+	    if len(self.expr) == 1:
+		return None
 	    val = first(expr[0])
 	    expr = expr[1:]
 	else:
@@ -141,15 +141,11 @@ class Builtin(object):
 				% (self.name, self.f, self.arity, self.args)
 
     def __str__(self):
-	if not self.args:
-	    return self.name
-	else:
-	    def substr(e):
-		if isinstance(e, (Expression, Lambda)):
-		    return '(' + str(e) + ')'
-		else:
-		    return str(e)
-	    return '<%s %s>' % (self.name, ' '.join(map(substr, self.args)))
+	if not self.args: return self.name
+	def substr(e):
+	    return ('(%s)' if isinstance(e, (Expression, Lambda)) else '%s') \
+		    % (e,)
+	return '<%s %s>' % (self.name, ' '.join(map(substr, self.args)))
 
     def simplify(self): return self
 
@@ -175,12 +171,11 @@ def mkexpr(*expr):
     elif len(expr) == 1:
 	return expr[0]
     else:
-	def unbuild(e):
-	    if isinstance(e, FreeVar) and isinstance(e.expr, Builtin):
-		return e.expr
-	    else:
-		return e
-	return Expression(*(unbuild(e) for e in expr))
+	while isinstance(expr[0], Expression):
+	    expr = expr[0].expr + expr[1:]
+	return Expression(*expr)
+
+def parse(s, predef={}): return parseExpr(lexExpr(s), predef)
 
 def parseExpr(tokens, predef={}):
     # predef - dict of previously defined symbols
@@ -221,57 +216,48 @@ def parseExpr(tokens, predef={}):
 		while stack and stack[-1]:
 		    if stack[-1][0] == '(':
 			expr = stack.pop()[1:]
-			if not expr:
-			    raise LambdaError('empty parentheses')
+			if not expr: raise LambdaError('empty parentheses')
 			stack[-1].append(mkexpr(*expr))
 			break
 		    elif stack[-1][0] == 'λ':
 			args = stack[-1][1]
 			scope = stack[-1][2]
 			expr = stack.pop()[3:]
-			if not expr:
-			    raise LambdaError('empty lambda')
+			if not expr: raise LambdaError('empty lambda')
 			stack[-1].append(Lambda(args, mkexpr(*expr)))
-		    else:
-			raise LambdaError('too many closing parentheses')
-		else:
-		    raise LambdaError('too many closing parentheses')
+		    else: raise LambdaError('too many closing parentheses')
+		else: raise LambdaError('too many closing parentheses')
 	    elif t == 'λ':
 		inArgs = True
 		stack.append(['λ'])
 	    elif t == '.':
-		raise LambdaError('argument terminator outside of argument list')
-	    elif t[0] == "'":
-		stack[-1].append(Atom(t[1:]))
-	    else:
-		if   t in scope:  stack[-1].append(BoundVar(t, scope[t]))
-		elif t in predef: stack[-1].append(FreeVar(t, predef[t]))
-		else: raise LambdaError('undefined variable %r' % (t,))
+		raise LambdaError('argument terminator outside argument list')
+	    elif t[0] == "'": stack[-1].append(Atom(t[1:]))
+	    elif t in scope:  stack[-1].append(BoundVar(t, scope[t]))
+	    elif t in predef: stack[-1].append(FreeVar(t, predef[t]))
+	    else: raise LambdaError('undefined variable %r' % (t,))
     if inArgs:
 	raise LambdaError('expression terminated in middle of argument list')
-    while stack and stack[-1]:
-	if stack[-1][0] == '(':
-	    raise LambdaError('parentheses not closed')
-	elif stack[-1][0] == 'λ':
-	    args = stack[-1][1]
-	    scope = stack[-1][2]
-	    expr = stack.pop()[3:]
-	    if not expr:
-		raise LambdaError('empty lambda')
-	    stack[-1].append(Lambda(args, mkexpr(*expr)))
-	else: break
-    return mkexpr(*stack[-1]).simplify() if stack[-1] else None
+    if not stack[-1]: return None
+    while stack[-1][0] == 'λ':
+	args = stack[-1][1]
+	scope = stack[-1][2]
+	expr = stack.pop()[3:]
+	if not expr: raise LambdaError('empty lambda')
+	stack[-1].append(Lambda(args, mkexpr(*expr)))
+    if stack[-1][0] == '(': raise LambdaError('parentheses not closed')
+    return mkexpr(*stack[-1])
 
 def lexExpr(s):
-    s = re.sub("(?<=λ|\\)([A-Za-z]+)(?=\\.|->|→)",
+    s = re.sub(r'(?<=λ|\x5C)([A-Za-z]+)(?=\.|->|→)',
 	       lambda m: ' '.join(m.group()),
 	       s)
     for word in re.split(r'\s+|([()\x5C.]|λ|->|→)', s):
 	if   word == '': next
+	elif word == "'": raise LambdaError('invalid token "\'"')
 	elif word == '(' or word == ')':  yield word
 	elif word == 'λ' or word == '\\': yield 'λ'
 	elif word in ('.', '->', '→'):    yield '.'
-	elif word == "'": raise LambdaError('invalid token "\'"')
 	else: yield word
 
 TRUE  = Lambda(('x', 'y'), BoundVar('x', 1))
