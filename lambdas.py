@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import with_statement
 import re
 
 def structCmp(*fields):  # internal function; not for export
@@ -213,8 +214,8 @@ def parseline(s, predef={}):
 		inArgs = False
 	    else:
 		if t != '_' and t in stack[-1]:
-		    raise LambdaError('same name used for multiple arguments'
-				      ' to lambda')
+		    raise LambdaError('duplicate argument %r in lambda'
+				      ' definition' % (t,))
 		stack[-1].append(t)
 	else:
 	    if t == '(':
@@ -284,16 +285,68 @@ def lex(s):  # not for export?
 
 def evaluate(expr, limit=None):
     if expr is None:
-        raise ValueError('cannot evaluate None')
+	raise ValueError('cannot evaluate None')
     i = 0
     while limit is None or i < limit:
-        expr2 = expr.eval()
+	expr2 = expr.eval()
 	if expr2 is None:
 	    return expr
 	else:
 	    expr = expr2
 	i += 1
     return expr
+
+def parseFile(fname, predef=None, onredef=None, preimport=None):
+    # Whenever a symbol is redefined in a file, if `onredef` is None, the
+    # redefinition goes through.  Otherwise, the symbol is set to
+    # `onredef(name, old_val, new_val, fname, lineno)` (deleted if this value
+    # is None).
+
+    # Whenever an :import statement is encountered, if `preimport` is None, the
+    # filename is passed to `open` and the file is recursively parsed.
+    # Otherwise, `parseFile` is applied to `preimport(file_to_import, fname,
+    # lineno)` (NOP if this value is None).
+
+    exprList = []
+    if predef    is None: predef = {}
+    if fname     is None: return (predef, exprList)
+    if onredef   is None: onredef   = lambda a, b, x, c, d: x
+    if preimport is None: preimport = lambda x, a, b: x
+    with open(fname) if isinstance(fname, str) else fname as fp:
+	line = ''
+	lineno = 1
+	for l in fp:
+	    lineEnd = lineno + 1
+	    line += re.sub(r'#.*$', '', chomp(l))
+	    if line and line[-1] == '\\':
+		line = line[:-1]
+		continue
+	    line = line.strip()
+	    m = re.search(r'^:import\s+(?=\S)', line)
+	    if m:
+		toImport = preimport(line[m.end():], fname, lineno)
+		if toImport is not None:
+		    (predef, exprs2) = parseFile(toImport, predef, onredef,
+						 preimport)
+		    exprList += exprs2
+	    elif line != '':
+		###try:
+		expr = parseline(line, predef)
+		###except LambdaError, e:
+		###    ???
+		if isinstance(expr, tuple):
+		    if expr[0] in predef:
+			predef[expr[0]] = onredef(expr[0], predef[expr[0]],
+						  expr[1], fname, lineno)
+			if predef[expr[0]] is None: del predef[expr[0]]
+		    else:
+			predef[expr[0]] = expr[1]
+		else:
+		    exprList.append(expr)
+	    line = ''
+	    lineno = lineEnd
+    return (predef, exprList)
+
 
 TRUE  = Lambda(('x', 'y'), BoundVar('x', 1))
 FALSE = Lambda(('x', 'y'), BoundVar('y', 0))
@@ -308,3 +361,8 @@ builtins = {
 }
 
 builtins["=="] = parseline('λxy. $! ($! = x) y', builtins)
+
+def chomp(txt):  # internal function; not for export
+    if txt and txt[-1] == '\n': txt = txt[:-1]
+    if txt and txt[-1] == '\r': txt = txt[:-1]
+    return txt
