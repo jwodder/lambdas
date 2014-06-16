@@ -177,6 +177,7 @@ def mkexpr(*expr):
 
 def parseline(s, predef={}):
     # predef - dict of previously defined symbols
+    defining = None
     stack = [[]]
     # Except for the first element, every element of `stack` is of the form
     # ['(', ...] or ['λ', args, outer_scope, ...] -- except while reading the
@@ -185,10 +186,16 @@ def parseline(s, predef={}):
     scope = {}
     # While inside a lambda, `scope` is a dict mapping bound variable names to
     # integers representing the depth of the lambda to which they are bound.
+    expectColoneq = False
     inArgs = False
     for t in lex(s):
-	if inArgs:
-	    if t in ('(', ')', 'λ') or t[0] == "'":
+    	if expectColoneq:
+	    if t != ':=':
+		raise LambdaError('":=" expected after undefined variable at'
+				  ' start of line')
+	    expectColoneq = False
+	elif inArgs:
+	    if t in ('(', ')', 'λ', ':=') or t[0] == "'":
 		raise LambdaError('invalid token in lambda argument list')
 	    elif t == '.':
 		args = stack[-1][1:]
@@ -230,9 +237,18 @@ def parseline(s, predef={}):
 		stack.append(['λ'])
 	    elif t == '.':
 		raise LambdaError('argument terminator outside argument list')
+	    elif t == ':=':
+	        if len(stack) == 1 and len(stack[0]) == 1 \
+		    and isinstance(stack[0][0], FreeVar) and defining is None:
+		    defining = stack[0].pop().name
+		else:
+		    raise LambdaError('unexpected ":="')
 	    elif t[0] == "'": stack[-1].append(Atom(t[1:]))
 	    elif t in scope:  stack[-1].append(BoundVar(t, scope[t]))
 	    elif t in predef: stack[-1].append(FreeVar(t, predef[t]))
+	    elif defining is None and stack == [[]]:
+	        defining = t
+		expectColoneq = True
 	    else: raise LambdaError('undefined variable %r' % (t,))
     if inArgs:
 	raise LambdaError('expression terminated in middle of argument list')
@@ -244,16 +260,17 @@ def parseline(s, predef={}):
 	if not expr: raise LambdaError('empty lambda')
 	stack[-1].append(Lambda(args, mkexpr(*expr)))
     if stack[-1][0] == '(': raise LambdaError('parentheses not closed')
-    return mkexpr(*stack[-1])
+    expr = mkexpr(*stack[-1])
+    return (defining, expr) if defining is not None else expr
 
 def lex(s):  # not for export?
     s = re.sub(r'(?:λ|\x5C)([A-Za-z]+)(?:\.|->|→)',
 	       lambda m: 'λ' + ' '.join(m.group(1)) + '.',
 	       s)
-    for word in re.split(r'\s+|([()\x5C.]|λ|->|→)', s):
+    for word in re.split(r'\s+|([()\x5C.]|λ|->|→|:=)', s):
 	if   word is None or word == '': continue
 	elif word == "'": raise LambdaError('invalid token "\'"')
-	elif word == '(' or word == ')':  yield word
+	elif word in ('(', ')', ':='):    yield word
 	elif word == 'λ' or word == '\\': yield 'λ'
 	elif word in ('.', '->', '→'):    yield '.'
 	else: yield word
