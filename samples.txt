@@ -13,12 +13,17 @@ Y' := (λxy. x y x) (λyx. y (x y x))
 Ω := ω ω
 Ω_2 := (λx. x x x) (λx. x x x)
 
-0 := λfx. x
-1 := λfx. f x
-2 := λfx. f (f x)
-3 := λfx. f (f (f x))
-4 := λfx. f (f (f (f x)))
-5 := λfx. f (f (f (f (f x))))
+0  := λfx. x
+1  := λfx. f x
+2  := λfx. f (f x)
+3  := λfx. f (f (f x))
+4  := λfx. f (f (f (f x)))
+5  := λfx. f (f (f (f (f x))))
+6  := λfx. f (f (f (f (f (f x)))))
+7  := λfx. f (f (f (f (f (f (f x))))))
+8  := λfx. f (f (f (f (f (f (f (f x)))))))
+9  := λfx. f (f (f (f (f (f (f (f (f x))))))))
+10 := λfx. f (f (f (f (f (f (f (f (f (f x)))))))))
 # et cetera
 
 

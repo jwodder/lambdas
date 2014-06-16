@@ -152,17 +152,17 @@ class Builtin(object):
     def eval(self):
 	if len(self.args) >= self.arity:
 	    val = self.f(*self.args[:self.arity])
-	    return Expression(val, *self.args[self.arity:]).simplify()
+	    return mkexpr(val, *self.args[self.arity:])
 	else:
 	    return None
 
     def __call__(self, arg):
 	args = self.args + (arg,)
-	if len(args) + 1 >= self.arity:
+	if len(args) >= self.arity:
 	    val = self.f(*args[:self.arity])
-	    return Expression(val, *args[self.arity:]).simplify()
+	    return mkexpr(val, *args[self.arity:])
 	else:
-	    return Builtin(self.name, self.f, self.arity, self.args)
+	    return Builtin(self.name, self.f, self.arity, args)
 
 
 def mkexpr(*expr):
