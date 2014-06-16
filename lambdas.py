@@ -278,9 +278,28 @@ def lex(s):  # not for export?
 	elif word in ('.', '->', '→'):    yield '.'
 	else: yield word
 
+def evaluate(expr, limit=None):
+    if expr is None:
+        raise ValueError('cannot evaluate None')
+    i = 0
+    while limit is None or i < limit:
+        expr2 = expr.eval()
+	if expr2 is None:
+	    return expr
+	else:
+	    expr = expr2
+	i += 1
+    return expr
+
 TRUE  = Lambda(('x', 'y'), BoundVar('x', 1))
 FALSE = Lambda(('x', 'y'), BoundVar('y', 0))
 
+builtin_limit = 100
+
 builtins = {
-    "=": Builtin("=", lambda x,y: TRUE if x == y else FALSE, 2)
+    "=": Builtin("=", lambda x,y: TRUE if x == y else FALSE, 2),
+    "$!": Builtin("$!", lambda f,x: mkexpr(f, evaluate(x, builtin_limit)), 2),
+    ":type": Builtin(":type", lambda x: Atom(x.__class__.__name__), 1),
 }
+
+builtins["=="] = parseline('λxy. $! ($! = x) y', builtins)
