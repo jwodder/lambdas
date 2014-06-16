@@ -3,7 +3,6 @@ import sys
 sys.path.insert(1, sys.path[0] + '/..')
 import lambdas
 
-expr01 = lambdas.parseExpr(['λ', 'x', 'y', '.', 'x',
-			    '(', 'λ', 'z', '.', 'λ', 'y', '.', 'y', ')'])
+expr01 = lambdas.parseline('λxy. x (λz. λy. y)')
 print str(expr01)
 print repr(expr01)

@@ -4,5 +4,3 @@
  - Treats newlines as expression terminators, except when they end with a
    backslash (which is removed before parsing)
  - Enables defining new free variables with "X := ..." syntax
-- Rename `parse` to `parseExpr` and `parseExpr` to something else (or make it
-  part of the new `parseExpr`?)

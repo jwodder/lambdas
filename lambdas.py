@@ -175,9 +175,7 @@ def mkexpr(*expr):
 	    expr = expr[0].expr + expr[1:]
 	return Expression(*expr)
 
-def parse(s, predef={}): return parseExpr(lexExpr(s), predef)
-
-def parseExpr(tokens, predef={}):
+def parseline(s, predef={}):
     # predef - dict of previously defined symbols
     stack = [[]]
     # Except for the first element, every element of `stack` is of the form
@@ -188,7 +186,7 @@ def parseExpr(tokens, predef={}):
     # While inside a lambda, `scope` is a dict mapping bound variable names to
     # integers representing the depth of the lambda to which they are bound.
     inArgs = False
-    for t in tokens:
+    for t in lex(s):
 	if inArgs:
 	    if t in ('(', ')', 'λ') or t[0] == "'":
 		raise LambdaError('invalid token in lambda argument list')
@@ -248,7 +246,7 @@ def parseExpr(tokens, predef={}):
     if stack[-1][0] == '(': raise LambdaError('parentheses not closed')
     return mkexpr(*stack[-1])
 
-def lexExpr(s):
+def lex(s):  # not for export?
     s = re.sub(r'(?:λ|\x5C)([A-Za-z]+)(?:\.|->|→)',
 	       lambda m: 'λ' + ' '.join(m.group(1)) + '.',
 	       s)
