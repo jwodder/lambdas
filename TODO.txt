@@ -3,6 +3,10 @@
 - Add an alternative to := that strictly evaluates its right argument
 - Rename `FreeVar` to something more accurate?
 - Add the following features to repl.py:
- - an :import statement
  - a way to change lambdas.builtin_limit
  - a way to make step-by-step evaluation of expressions jump right to the end
+ - a :help statement
+- Add a predefined value for the `preimport` argument to `parseFile` that
+  avoids reimporting already-imported files
+- Make `parseFile` add filename and line number information to `LambdaError`s
+  encountered during parsing

@@ -13,6 +13,19 @@ Y' := (λxy. x y x) (λyx. y (x y x))
 Ω := ω ω
 Ω_2 := (λx. x x x) (λx. x x x)
 
+TRUE  := λxy. x
+FALSE := λxy. y
+NOT   := λp. p FALSE TRUE
+AND   := λpq. p q p
+OR    := λpq. p p q
+XOR   := λpq. p (NOT q) q
+
+PAIR := λxyf. f x y  # a.k.a. CONS
+CAR := λp. p TRUE
+CDR := λp. p FALSE
+NIL := λx. TRUE
+NULL := λp. p (λxy. FALSE)
+
 0  := λfx. x
 1  := λfx. f x
 2  := λfx. f (f x)
@@ -38,6 +51,14 @@ PLUS := λmnfx. n f (m f x)  # ≡ λmn. n SUCC m
 # `SUB m n` evaluates to m - n if m > n and to zero otherwise:
 SUB := λmn. n PRED m
 
+ISZERO := λn. n (λx. FALSE) TRUE
+LEQ    := λmn. ISZERO (SUB m n)
+LT     := λab. NOT (LEQ b a)
+EQ     := λmn. AND (LEQ m n) (LEQ n m)
+NEQ    := λab. OR (NOT (LEQ a b)) (NOT (LEQ b a))
+GEQ    := λab. LEQ b a
+GT     := λab. NOT (LEQ a b)
+
 MULT := B  # ≡ λmnf. m (n f) ≡ λmn. m (PLUS n) 0
   
 # `DIV a b` evaluates to a pair of two numbers, `a idiv b` and `a mod b`:
@@ -56,35 +77,11 @@ FACTORIAL := Y (λgx. ISZERO x 1 (MULT x (g (PRED x))))
 # `FIBONACCI n` evaluates to the n-th Fibonacci number:
 FIBONACCI := λn. n (λfab. f b (PLUS a b)) K 0 1
 
-GCD := (λgmn. LE m n (g n m) (g m n)) (Y (λgxy. ISZERO y x (g y (MOD x y))))
-
-TRUE  := λxy. x
-FALSE := λxy. y
-AND   := λpq. p q p
-OR    := λpq. p p q
-XOR   := λpq. p (NOT q) q
-NOT   := λp. p FALSE TRUE
-
-ISZERO := λn. n (λx. FALSE) TRUE
-LT     := λab. NOT (LEQ b a)
-LEQ    := λmn. ISZERO (SUB m n)
-EQ     := λmn. AND (LEQ m n) (LEQ n m)
-NEQ    := λab. OR (NOT (LEQ a b)) (NOT (LEQ b a))
-GEQ    := λab. LEQ b a
-GT     := λab. NOT (LEQ a b)
-
+GCD := (λgmn. LEQ m n (g n m) (g m n)) (Y (λgxy. ISZERO y x (g y (MOD x y))))
 
 # GET n i a_0 a_1 ... a_{n-1} ≡ a_i:
 GET := λni. i K (SUB n (SUCC i) K)
 
-
-# Pairs and Lists
-
-PAIR := λxyf. f x y  # a.k.a. CONS
-CAR := λp. p TRUE
-CDR := λp. p FALSE
-NIL := λx. TRUE
-NULL := λp. p (λxy. FALSE)
 
 # Concatenate two lists:
 APPEND := Y (λgab. NULL a b (PAIR (CAR a) (g (CDR a) b)))
@@ -122,11 +119,6 @@ MAP := Y (λgfx. NULL x NIL (PAIR (f (CAR x)) (g f (CDR x))))
 # `x`)
 FILTER := Y (λgfx. NULL x NIL (f (CAR x) (PAIR (CAR x)) I (g f (CDR x))))
 
-# `CROSS f l m` evaluates to a list of all values of `f a b` where `a` is in
-# the list `l` and `b` is in the list `m`.  To obtain the Cartesian cross
-# product of `l` and `m`, supply PAIR (or a similar function) for `f`.
-CROSS := λflm. FOLD-LEFT APPEND NIL (MAP (λx. MAP (f x) m) l)
- 
 # `FOLD-LEFT f e x` -- Apply `f a` to each element of the list `x`, where `a`
 # is the result of the previous application (or `e` for the first application)
 # and return the result of the last application
@@ -136,3 +128,8 @@ FOLD-LEFT := Y (λgfex. NULL x e (g f (f e (CAR x)) (CDR x)))
 # reverse order, where `a` is the result of the previous application (or `e`
 # for the first application) and return the result of the last application
 FOLD-RIGHT := λfex. Y (λgy. NULL y e (f (CAR y) (g (CDR y)))) x
+
+# `CROSS f l m` evaluates to a list of all values of `f a b` where `a` is in
+# the list `l` and `b` is in the list `m`.  To obtain the Cartesian cross
+# product of `l` and `m`, supply PAIR (or a similar function) for `f`.
+CROSS := λflm. FOLD-LEFT APPEND NIL (MAP (λx. MAP (f x) m) l)

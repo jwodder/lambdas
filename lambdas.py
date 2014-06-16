@@ -351,7 +351,7 @@ def parseFile(fname, predef=None, onredef=None, preimport=None):
 TRUE  = Lambda(('x', 'y'), BoundVar('x', 1))
 FALSE = Lambda(('x', 'y'), BoundVar('y', 0))
 
-builtin_limit = 100
+builtin_limit = 1000
 
 builtins = {
     "=": Builtin("=", lambda x,y: TRUE if x == y else FALSE, 2),
