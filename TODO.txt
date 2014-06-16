@@ -1,4 +1,5 @@
-- Support "_" as a name for an unusable and repeatable lambda argument
+- Add documentation
+- Add a README
 - Add a `parseFile` function with the following features:
  - Supports #-comments
  - Treats newlines as expression terminators, except when they end with a

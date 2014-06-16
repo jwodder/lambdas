@@ -206,11 +206,12 @@ def parseline(s, predef={}):
 		for var in scope:
 		    newScope[var] = scope[var] + len(args)
 		for i, var in enumerate(reversed(args)):
-		    newScope[var] = i
+		    if var != '_':
+			newScope[var] = i
 		scope = newScope
 		inArgs = False
 	    else:
-		if t in stack[-1]:
+		if t != '_' and t in stack[-1]:
 		    raise LambdaError('same name used for multiple arguments'
 				      ' to lambda')
 		stack[-1].append(t)
@@ -243,6 +244,8 @@ def parseline(s, predef={}):
 		    defining = stack[0].pop().name
 		else:
 		    raise LambdaError('unexpected ":="')
+	    elif t == '_':
+		raise LambaError("special name '_' is unusable in expressions")
 	    elif t[0] == "'": stack[-1].append(Atom(t[1:]))
 	    elif t in scope:  stack[-1].append(BoundVar(t, scope[t]))
 	    elif t in predef: stack[-1].append(FreeVar(t, predef[t]))
