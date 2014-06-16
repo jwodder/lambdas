@@ -93,7 +93,8 @@ class Expression(object):
 
     __cmp__ = structCmp("expr")
 
-    def __repr__(self): return 'Expression' + repr(self.expr)
+    def __repr__(self):
+	return 'Expression(' + ', '.join(map(repr, self.expr)) + ')'
 
     def __str__(self):
 	if len(self.expr) == 1:
@@ -123,9 +124,9 @@ class Expression(object):
 	if val is None:
 	    return None
 	elif isinstance(val, Expression):
-	    return Expression(*(val.expr + expr))
+	    return mkexpr(*(val.expr + expr))
 	else:
-	    return Expression(val, *expr)
+	    return mkexpr(val, *expr)
 
 
 class Builtin(object):
