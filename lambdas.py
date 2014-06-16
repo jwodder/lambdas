@@ -238,7 +238,7 @@ def parseline(s, predef={}):
 	    elif t == '.':
 		raise LambdaError('argument terminator outside argument list')
 	    elif t == ':=':
-	        if len(stack) == 1 and len(stack[0]) == 1 \
+		if len(stack) == 1 and len(stack[0]) == 1 \
 		    and isinstance(stack[0][0], FreeVar) and defining is None:
 		    defining = stack[0].pop().name
 		else:
@@ -247,7 +247,7 @@ def parseline(s, predef={}):
 	    elif t in scope:  stack[-1].append(BoundVar(t, scope[t]))
 	    elif t in predef: stack[-1].append(FreeVar(t, predef[t]))
 	    elif defining is None and stack == [[]]:
-	        defining = t
+		defining = t
 		expectColoneq = True
 	    else: raise LambdaError('undefined variable %r' % (t,))
     if inArgs:
