@@ -254,7 +254,10 @@ def parseline(s, predef={}):
 		defining = t
 		expectColoneq = True
 	    else: raise LambdaError('undefined variable %r' % (t,))
-    if inArgs:
+    if expectColoneq:
+	raise LambdaError('":=" expected after undefined variable at'
+			  ' start of line')
+    elif inArgs:
 	raise LambdaError('expression terminated in middle of argument list')
     if not stack[-1]: return None
     while stack[-1][0] == 'λ':
@@ -301,6 +304,7 @@ builtins = {
     "=": Builtin("=", lambda x,y: TRUE if x == y else FALSE, 2),
     "$!": Builtin("$!", lambda f,x: mkexpr(f, evaluate(x, builtin_limit)), 2),
     ":type": Builtin(":type", lambda x: Atom(x.__class__.__name__), 1),
+    ":strict": Builtin(":strict", lambda x: evaluate(x, builtin_limit), 1),
 }
 
 builtins["=="] = parseline('λxy. $! ($! = x) y', builtins)

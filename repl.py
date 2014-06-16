@@ -11,13 +11,17 @@ while True:
 	print
 	break
     line = line.strip()
+    words = line.split()
     if line == '': continue
     elif line == ':quit': break
-    elif line == ':defs':
-	for name in sorted(bindings.keys()):
-	    print '%s := %s' % (name, bindings[name])
+    elif words[0] == ':def':
+	names = words[1:] if words[1:] else sorted(bindings.keys())
+	for name in names:
+	    val = bindings.get(name, 'UNDEFINED')
+	    if isinstance(val, lambdas.Builtin):
+	        val = '<builtin>'
+	    print '%s := %s' % (name, val)
     else:
-	words = line.split()
 	if words[0] == ':repr':
 	    showRepr = True
 	    words = words[1:]

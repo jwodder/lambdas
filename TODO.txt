@@ -1,9 +1,14 @@
 - Add documentation
 - Add a README
+- Add an alternative to := that strictly evaluates its right argument
+- Rename `FreeVar` to something more accurate?
 - Add a `parseFile` function with the following features:
  - Supports #-comments
  - Treats newlines as expression terminators, except when they end with a
    backslash (which is removed before parsing)
  - Enables defining new free variables with "X := ..." syntax
  - a recursive :import statement
-- Give repl.py an :import statement
+- Add the following features to repl.py:
+ - an :import statement
+ - a way to change lambdas.builtin_limit
+ - a way to make step-by-step evaluation of expressions jump right to the end
