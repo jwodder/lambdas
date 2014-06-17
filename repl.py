@@ -13,7 +13,7 @@ while True:
     except EOFError:
 	print
 	break
-    line = line.strip()
+    line  = line.strip()
     words = line.split()
 
     if line == '': continue

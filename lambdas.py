@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
-
 from __future__ import with_statement
 import re
+
+__all__ = ["LambdaError",
+	   "Atom", "FreeVar", "BoundVar", "Lambda", "Expression", "Builtin",
+	   "mkexpr", "evaluate",
+	   "parseline", "parseFile",
+	   "builtin_limit", "builtins"]
 
 def structCmp(*fields):  # internal function; not for export
     return lambda self, other: cmp(type(self), type(other)) or \
@@ -124,10 +129,7 @@ class Expression(object):
 	    val = first.eval()
 	if val is None:
 	    return None
-	elif isinstance(val, Expression):
-	    return mkexpr(*(val.expr + expr))
-	else:
-	    return mkexpr(val, *expr)
+	return mkexpr(val, *expr)
 
 
 class Builtin(object):
@@ -271,7 +273,7 @@ def parseline(s, predef={}):
     expr = mkexpr(*stack[-1])
     return (defining, expr) if defining is not None else expr
 
-def lex(s):  # not for export?
+def lex(s):  # not for export
     s = re.sub(r'(?:λ|\x5C)([A-Za-z]+)(?:\.|->|→)',
 	       lambda m: 'λ' + ' '.join(m.group(1)) + '.',
 	       s)

@@ -44,7 +44,7 @@ NULL := λp. p (λxy. FALSE)
 SUCC := λnfx. f (n f x)
 
 # The predecessor operator (for all n>0, calculate n-1; for zero, return zero):
-PRED := λnfx. n (λgh. h (g f)) (λu. x) (λu. u)
+PRED := λnfx. n (λgh. h (g f)) (λu. x) I
 
 PLUS := λmnfx. n f (m f x)  # ≡ λmn. n SUCC m
 
@@ -110,6 +110,7 @@ LIST := λn. n (λfax. f (PAIR x a)) REVERSE NIL
  
 # `APPLY f x` passes the elements of the list `x` to `f` as arguments
 APPLY := Y (λgfx. NULL x f (g (f (CAR x)) (CDR x)))
+# ≡ FOLD-LEFT I
 
 # `MAP f x` maps each element of the list `x` through `f`:
 MAP := Y (λgfx. NULL x NIL (PAIR (f (CAR x)) (g f (CDR x))))

@@ -14,3 +14,11 @@
   avoids reimporting already-imported files
 - Make `parseFile` add filename and line number information to `LambdaError`s
   encountered during parsing
+- Make Lambda.eval call .eval on its expr?
+- Add a mutating alternative to .eval in order to cut down on repeated
+  computations
+- Make :import take its argument as a Python string parsed with
+  `ast.literal_eval` (requires v.2.6+)
+- Make repl.py implement :import by running :import lines through `parseFile`
+  with StringIO
+- Add Builtins for concatenating and splitting Atoms?
