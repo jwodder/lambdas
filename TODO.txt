@@ -4,8 +4,12 @@
 - Rename `FreeVar` to something more accurate?
 - Add the following features to repl.py:
  - a way to change lambdas.builtin_limit
- - a way to make step-by-step evaluation of expressions jump right to the end
  - a :help statement
+ - a :last variable
+ - a way to step through evaluation of expressions in imported files
+ - a way to jump straight to the end when stepping through evaluations
+ - (better) readline history
+ - Get rid of the blank lines between expression steps
 - Add a predefined value for the `preimport` argument to `parseFile` that
   avoids reimporting already-imported files
 - Make `parseFile` add filename and line number information to `LambdaError`s

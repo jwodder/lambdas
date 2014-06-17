@@ -1,9 +1,12 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+import readline
 import lambdas
 
 bindings = dict(lambdas.builtins)
 while True:
     try:
-	line = raw_input('> ')
+	line = raw_input('λ> ')
 	if line == '': continue
 	while line[-1] == '\\':
 	    line = line[:-1] + raw_input('... ')
@@ -22,7 +25,7 @@ while True:
 	for name in names:
 	    val = bindings.get(name, 'UNDEFINED')
 	    if isinstance(val, lambdas.Builtin):
-	        val = '<builtin>'
+		val = '<builtin>'
 	    print '%s := %s' % (name, val)
 
     elif words[0] == ':import':
@@ -33,39 +36,34 @@ while True:
 	### TODO: Make this handle errors thrown by parseFile
 	(bindings, exprList) = lambdas.parseFile(words[1], bindings)
 	for expr in exprList:
-	    while expr is not None:
-		print expr
-		if raw_input() == '':
-		    expr = expr.eval()
-		else:
-		    break
+	    print lambdas.evaluate(expr, lambdas.builtin_limit)
 
     else:
-	if words[0] == ':repr':
-	    showRepr = True
-	    words = words[1:]
+	modifier = None
+	if words[0] in (':repr', ':step'):
+	    modifier = words.pop(0)
 	    if not words:
-	        print 'ERROR: ":repr" must be followed by an expression'
+		print 'ERROR: %r requires an expression' % (modifier,)
 		continue
-	else:
-	    showRepr = False
 	line = ' '.join(words)
 	try:
 	    expr = lambdas.parseline(line, bindings)
 	except lambdas.LambdaError, e:
 	    print 'ERROR: %s' % (e,)
 	    continue
-	if showRepr:
+	if modifier == ':repr':
 	    #print repr(expr)
 	    # Are there any circumstances in which a non-strict `repr` would be
 	    # desirable?
 	    print repr(lambdas.evaluate(expr, lambdas.builtin_limit))
 	elif isinstance(expr, tuple):
 	    bindings[expr[0]] = expr[1]
-	else:
+	elif modifier == ':step':
 	    while expr is not None:
 		print expr
 		if raw_input() == '':
 		    expr = expr.eval()
 		else:
 		    break
+	else:
+	    print lambdas.evaluate(expr, lambdas.builtin_limit)
