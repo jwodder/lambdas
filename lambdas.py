@@ -314,39 +314,47 @@ def parseFile(fname, predef=None, onredef=None, preimport=None):
     if fname     is None: return (predef, exprList)
     if onredef   is None: onredef   = lambda a, b, x, c, d: x
     if preimport is None: preimport = lambda x, a, b: x
-    with open(fname) if isinstance(fname, str) else fname as fp:
-	line = ''
-	lineno = 1
-	for l in fp:
-	    lineEnd = lineno + 1
-	    line += re.sub(r'#.*$', '', chomp(l))
-	    if line and line[-1] == '\\':
-		line = line[:-1]
-		continue
-	    line = line.strip()
-	    m = re.search(r'^:import\s+(?=\S)', line)
-	    if m:
-		toImport = preimport(line[m.end():], fname, lineno)
-		if toImport is not None:
-		    (predef, exprs2) = parseFile(toImport, predef, onredef,
-						 preimport)
-		    exprList += exprs2
-	    elif line != '':
-		###try:
-		expr = parseline(line, predef)
-		###except LambdaError, e:
-		###    ???
-		if isinstance(expr, tuple):
-		    if expr[0] in predef:
-			predef[expr[0]] = onredef(expr[0], predef[expr[0]],
-						  expr[1], fname, lineno)
-			if predef[expr[0]] is None: del predef[expr[0]]
-		    else:
-			predef[expr[0]] = expr[1]
+    if isinstance(fname, str):  # Is `unicode` also acceptable?
+	fp = open(fname)
+    else:
+	fp = fname
+    # StringIO and cStringIO objects don't work with `with` statements in my
+    # old version of Python, so we'll forego the construct and rely on normal
+    # memory management instead.
+    line = ''
+    lineno = 1
+    for l in fp:
+	lineEnd = lineno + 1
+	line += re.sub(r'#.*$', '', chomp(l))
+	if line and line[-1] == '\\':
+	    line = line[:-1]
+	    continue
+	line = line.strip()
+	m = re.search(r'^:import(\s+|$)', line)
+	if m:
+	    if m.end() >= len(line):
+		raise LambdaError('":import" must be followed by a filename')
+	    toImport = preimport(line[m.end():], fname, lineno)
+	    if toImport is not None:
+		(predef, exprs2) = parseFile(toImport, predef, onredef,
+					     preimport)
+		exprList += exprs2
+	elif line != '':
+	    ###try:
+	    expr = parseline(line, predef)
+	    ###except LambdaError, e:
+	    ###    ???
+	    if isinstance(expr, tuple):
+		if expr[0] in predef:
+		    predef[expr[0]] = onredef(expr[0], predef[expr[0]],
+					      expr[1], fname, lineno)
+		    if predef[expr[0]] is None: del predef[expr[0]]
 		else:
-		    exprList.append(expr)
-	    line = ''
-	    lineno = lineEnd
+		    predef[expr[0]] = expr[1]
+	    else:
+		exprList.append(expr)
+	line = ''
+	lineno = lineEnd
     return (predef, exprList)
 
 

@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+import cStringIO
 import readline
 import lambdas
 
@@ -29,12 +30,8 @@ while True:
 	    print '%s := %s' % (name, val)
 
     elif words[0] == ':import':
-	### TODO: Make this handle filenames with spaces
-	if len(words) != 2:
-	    print 'ERROR: ":import" must be followed by a filename'
-	    continue
-	### TODO: Make this handle errors thrown by parseFile
-	(bindings, exprList) = lambdas.parseFile(words[1], bindings)
+        impLine = cStringIO.StringIO(line)
+	(bindings, exprList) = lambdas.parseFile(impLine, bindings)
 	for expr in exprList:
 	    print lambdas.evaluate(expr, lambdas.builtin_limit)
 
