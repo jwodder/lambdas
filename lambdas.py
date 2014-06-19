@@ -365,6 +365,8 @@ def parseFile(fname, predef=None, onredef=None, preimport=None):
 TRUE  = Lambda(('x', 'y'), BoundVar('x', 1))
 FALSE = Lambda(('x', 'y'), BoundVar('y', 0))
 
+def undef(): raise LambdaError(':undef')
+
 builtin_limit = 1000
 
 builtins = {
@@ -372,6 +374,7 @@ builtins = {
     "$!": Builtin("$!", lambda f,x: mkexpr(f, evaluate(x, builtin_limit)), 2),
     ":type": Builtin(":type", lambda x: Atom(x.__class__.__name__), 1),
     ":strict": Builtin(":strict", lambda x: evaluate(x, builtin_limit), 1),
+    ":undef": Builtin(":undef", undef, 0),
 }
 
 builtins["=="] = parseline('λxy. $! ($! = x) y', builtins)
