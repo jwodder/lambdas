@@ -13,7 +13,6 @@
   avoids reimporting already-imported files
 - Make `parseFile` add filename and line number information to `LambdaError`s
   encountered during parsing
-- Make Lambda.eval call .eval on its expr?
 - Add a mutating alternative to .eval in order to cut down on repeated
   computations
 - Make :import take its argument as a Python string parsed with

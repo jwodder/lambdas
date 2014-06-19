@@ -74,23 +74,30 @@ class Lambda(object):
 
     def simplify(self): return Lambda(self.args, self.expr.simplify())
 
-    def eval(self): return None
+    def eval(self):
+	expr = self.expr.eval()
+	if expr is None: return None
+	else: return Lambda(self.args, expr)
 
     def __call__(self, arg):
-	def bind(i,e):
+	def bind(i, e, new):
 	    if isinstance(e, BoundVar) and e.index == i:
-		return arg
+		return new
 	    elif isinstance(e, Expression):
-		return Expression(*(bind(i,f) for f in e.expr))
+		return Expression(*(bind(i,f,new) for f in e.expr))
 	    elif isinstance(e, Lambda):
-		return Lambda(e.args, bind(i+len(e.args), e.expr))
+		if isinstance(new, BoundVar):
+		    new = BoundVar(new.name, new.index + len(e.args))
+		return Lambda(e.args, bind(i+len(e.args), e.expr, new))
 	    else:
 		return e
 	args2 = self.args[1:]
 	if args2:
-	    return Lambda(args2, bind(len(args2), self.expr))
+	    if isinstance(arg, BoundVar):
+		arg = BoundVar(arg.name, arg.index + len(args2))
+	    return Lambda(args2, bind(len(args2), self.expr, arg))
 	else:
-	    return bind(0, self.expr)
+	    return bind(0, self.expr, arg)
 
 
 class Expression(object):
@@ -119,9 +126,7 @@ class Expression(object):
     def eval(self):
 	first = self.expr[0].simplify()
 	expr = self.expr[1:]
-	if callable(first):
-	    if len(self.expr) == 1:
-		return None
+	if callable(first) and expr:
 	    val = first(expr[0])
 	    expr = expr[1:]
 	else:

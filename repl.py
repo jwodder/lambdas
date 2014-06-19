@@ -8,7 +8,7 @@ bindings = dict(lambdas.builtins)
 last = None
 while True:
     try:
-	line = raw_input('λ> ')
+	line = raw_input('>>> ')
 	if line == '': continue
 	while line[-1] == '\\':
 	    line = line[:-1] + raw_input('... ')
