@@ -5,7 +5,6 @@
 - Add the following features to repl.py:
  - a way to change lambdas.builtin_limit
  - a :help statement
- - a :last variable
  - a way to step through evaluation of expressions in imported files
  - a way to jump straight to the end when stepping through evaluations
  - (better) readline history
