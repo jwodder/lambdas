@@ -3,7 +3,8 @@
 - Add an alternative to := that strictly evaluates its right argument
 - Rename `FreeVar` to something more accurate?
 - Add the following features to repl.py:
- - a way to change lambdas.builtin_limit
+ - a way to change lambdas.strict_limit
+ - a way to change the limit used by direct calls to lambdas.evaluate
  - a :help statement
  - a way to step through evaluation of expressions in imported files
  - a way to jump straight to the end when stepping through evaluations

@@ -5,7 +5,7 @@ __all__ = ["LambdaError",
 	   "Atom", "FreeVar", "BoundVar", "Lambda", "Expression", "Builtin",
 	   "mkexpr", "evaluate",
 	   "parseline", "parseFile",
-	   "builtin_limit", "builtins"]
+	   "strict_limit", "builtins"]
 
 def structCmp(*fields):  # internal function; not for export
     return lambda self, other: cmp(type(self), type(other)) or \
@@ -199,8 +199,8 @@ def parseline(s, predef={}):
     for t in lex(s):
     	if expectColoneq:
 	    if t != ':=':
-		raise LambdaError('":=" expected after undefined variable at'
-				  ' start of line')
+		raise LambdaError('":=" expected after undefined variable %r'
+				  ' at start of line' % (defining,))
 	    expectColoneq = False
 	elif inArgs:
 	    if t in ('(', ')', 'λ', ':=') or t[0] == "'":
@@ -262,8 +262,8 @@ def parseline(s, predef={}):
 		expectColoneq = True
 	    else: raise LambdaError('undefined variable %r' % (t,))
     if expectColoneq:
-	raise LambdaError('":=" expected after undefined variable at'
-			  ' start of line')
+	raise LambdaError('":=" expected after undefined variable %r'
+			  ' at start of line' % (defining,))
     elif inArgs:
 	raise LambdaError('expression terminated in middle of argument list')
     if not stack[-1]: return None
@@ -367,13 +367,13 @@ FALSE = Lambda(('x', 'y'), BoundVar('y', 0))
 
 def undef(): raise LambdaError(':undef')
 
-builtin_limit = 1000
+strict_limit = 1000
 
 builtins = {
     "=": Builtin("=", lambda x,y: TRUE if x == y else FALSE, 2),
-    "$!": Builtin("$!", lambda f,x: mkexpr(f, evaluate(x, builtin_limit)), 2),
+    "$!": Builtin("$!", lambda f,x: mkexpr(f, evaluate(x, strict_limit)), 2),
     ":type": Builtin(":type", lambda x: Atom(x.__class__.__name__), 1),
-    ":strict": Builtin(":strict", lambda x: evaluate(x, builtin_limit), 1),
+    ":strict": Builtin(":strict", lambda x: evaluate(x, strict_limit), 1),
     ":undef": Builtin(":undef", undef, 0),
 }
 

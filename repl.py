@@ -34,7 +34,11 @@ while True:
 	impLine = cStringIO.StringIO(line)
 	(bindings, exprList) = lambdas.parseFile(impLine, bindings)
 	for expr in exprList:
-	    last = lambdas.evaluate(expr, lambdas.builtin_limit)
+	    try:
+		last = lambdas.evaluate(expr, lambdas.strict_limit)
+	    except lambdas.LambdaError, e:
+		print 'ERROR: %s' % (e,)
+		continue
 	    print last
 
     else:
@@ -52,7 +56,7 @@ while True:
 		    giveup = True
 		    break
 		else:
-		    words[i] = str(last)
+		    words[i] = '(%s)' % (last,)
 	if giveup: continue
 	line = ' '.join(words)
 	try:
@@ -68,16 +72,28 @@ while True:
 	    #print repr(expr)
 	    # Are there any circumstances in which a non-strict `repr` would be
 	    # desirable?
-	    last = lambdas.evaluate(expr, lambdas.builtin_limit)
+	    try:
+		last = lambdas.evaluate(expr, lambdas.strict_limit)
+	    except lambdas.LambdaError, e:
+		print 'ERROR: %s' % (e,)
+		continue
 	    print repr(last)
 	elif modifier == ':step':
 	    while expr is not None:
 		last = expr
 		print expr
 		if raw_input() == '':
-		    expr = expr.eval()
+		    try:
+			expr = expr.eval()
+		    except lambdas.LambdaError, e:
+			print 'ERROR: %s' % (e,)
+			break
 		else:
 		    break
 	else:
-	    last = lambdas.evaluate(expr, lambdas.builtin_limit)
+	    try:
+		last = lambdas.evaluate(expr, lambdas.strict_limit)
+	    except lambdas.LambdaError, e:
+		print 'ERROR: %s' % (e,)
+		continue
 	    print last
