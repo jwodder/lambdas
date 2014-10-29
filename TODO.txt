@@ -22,6 +22,6 @@
 - How should `parseFile` handle occurrences of ":import" at locations other
   than the start of a line and/or followed by special characters ("()λ." etc.)
   without intervening spaces?
-- Make repl.py handle errors thrown by `parseFile`?
+- Make repl.py handle errors thrown by `parseFile`
 - Give Lambda a method for renaming bound variables?
 - Give Lambda methods for converting between (λx y. E) and (λx.λy.E)

@@ -253,7 +253,7 @@ def parseline(s, predef={}):
 		else:
 		    raise LambdaError('unexpected ":="')
 	    elif t == '_':
-		raise LambaError("special name '_' is unusable in expressions")
+		raise LambdaError("special name '_' is unusable in expressions")
 	    elif t[0] == "'": stack[-1].append(Atom(t[1:]))
 	    elif t in scope:  stack[-1].append(BoundVar(t, scope[t]))
 	    elif t in predef: stack[-1].append(FreeVar(t, predef[t]))
